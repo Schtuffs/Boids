@@ -20,3 +20,6 @@ void key_callback_alt([[maybe_unused]]GLFWwindow* window, [[maybe_unused]]int ke
     }
 }
 
+void mouse_button_callback([[maybe_unused]]GLFWwindow* window, [[maybe_unused]]int key, [[maybe_unused]]int scancode, [[maybe_unused]]int action, [[maybe_unused]]int mods) {
+    
+}

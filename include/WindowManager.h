@@ -6,6 +6,6 @@
 namespace WindowManager {
     void add();
     void remove();
-    int hasWindows();
+    bool hasWindows();
 };
 

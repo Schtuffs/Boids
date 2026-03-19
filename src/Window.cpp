@@ -12,6 +12,10 @@ using namespace std::chrono_literals;
 static bool s_forceClose = false;
 // Holds a specified main window
 static GLFWwindow* s_mainWindow = nullptr;
+// Ensure the await is on main thread
+static std::thread::id s_mainThread = std::this_thread::get_id();
+// Holds pointer to all windows
+static std::vector<Window*> s_windows;
 
 // ----- Creation ----- Destruction -----
 
@@ -48,11 +52,12 @@ Window::Window(const std::string& title) {
 
     // Disable vsync
     glfwSwapInterval(0);
-
+    
     // Other variables
     this->m_prevTime = std::chrono::nanoseconds(std::chrono::system_clock::now().time_since_epoch()).count();
     this->m_frameTime = 0;
     this->m_sizeChanged = false;
+    this->m_closed = false;
 }
 
 bool Window::isCreated() {
@@ -71,10 +76,28 @@ void Window::close() {
     }
 }
 
-void Window::await() {
+void Window::await(const std::function<void(void)>& lambda) {
+    // Force main thread only
+    if (std::this_thread::get_id() != s_mainThread) {
+        std::println(stderr, "ERROR: Await must be called on the main thread");
+        return;
+    }
+    
     // Wait until windows are closed
     while (WindowManager::hasWindows()) {
+        // Poll events then call the users lambda function
         glfwPollEvents();
+        lambda();
+        
+        // This thread must close the windows
+        for (size_t i = 0; i < s_windows.size(); i++) {
+            if (s_windows[i]->m_closed) {
+                // Close window, erase from list, and adjust the index for removed item
+                s_windows[i]->close();
+                s_windows.erase(s_windows.begin() + i);
+                i--;
+            }
+        }
     }
 }
 
@@ -82,60 +105,105 @@ void Window::await() {
 
 // ----- Setters -----
 
-void Window::setMain() {
-    s_mainWindow = this->m_window;
-}
+Window& Window::setMain() {
+    if (m_window == nullptr) {
+        return *this;
+    }
 
-void Window::setBackground(Colour col) {
-    float r = col.getR() * (1. / COLOUR_MAX);
-    float g = col.getG() * (1. / COLOUR_MAX);
-    float b = col.getB() * (1. / COLOUR_MAX); 
-    float a = col.getA() * (1. / COLOUR_MAX);
+    s_mainWindow = this->m_window;
+    return *this;
+}    
+
+Window& Window::setBackground(Colour col) {
+    if (m_window == nullptr) {
+        return *this;
+    }
+
+    float r = col.r * (1. / COLOUR_MAX);
+    float g = col.g * (1. / COLOUR_MAX);
+    float b = col.b * (1. / COLOUR_MAX); 
+    float a = col.a * (1. / COLOUR_MAX);
     glfwMakeContextCurrent(this->m_window);
     glClearColor(r, g, b, a);
-}
 
-void Window::setSize(int width, int height) {
+    return *this;
+}    
+
+Window& Window::setSize(int width, int height) {
+    if (m_window == nullptr) {
+        return *this;
+    }
+
     // Change size variable
     m_width = width;
     m_height = height;
-
+    
     // Get lock for allowing thread to update size
     m_sizeLock.lock();
     m_sizeChanged = true;
     m_sizeLock.unlock();
+    
+    return *this;
+}    
+
+Window& Window::setTitle(const std::string& title) {
+    if (m_window == nullptr) {
+        return *this;
+    }
+    
+    glfwSetWindowTitle(m_window, title.c_str());
+    return *this;
 }
 
-void Window::add(Renderable& obj) {
+Window& Window::add(Renderable& obj) {
     this->m_renderObjects.push_back(&obj);
+    return *this;
+}
+
+bool Window::remove(uint64_t index) {
+    // TODO - add removal logic
+    (void)index;
+    return false;
+}
+
+bool Window::remove(Renderable& obj) {
+    // TODO - add removal logic
+    (void)obj;
+    return false;
 }
 
 
 
 // ----- Callbacks -----
 
-void Window::setCallback(GLFWkeyfun callback) {
+Window& Window::setCallback(GLFWkeyfun callback) {
     glfwSetKeyCallback(this->m_window, callback);
+    return *this;
 }
 
-void Window::setCallback(GLFWcursorposfun callback) {
+Window& Window::setCallback(GLFWcursorposfun callback) {
     glfwSetCursorPosCallback(this->m_window, callback);
+    return *this;
 }
 
-void Window::setCallback(GLFWmousebuttonfun callback) {
+Window& Window::setCallback(GLFWmousebuttonfun callback) {
     glfwSetMouseButtonCallback(this->m_window, callback);
+    return *this;
 }
 
-void Window::setCallback(GLFWcharfun callback) {
+Window& Window::setCallback(GLFWcharfun callback) {
     glfwSetCharCallback(this->m_window, callback);
+    return *this;
 }
 
-void Window::setCallback(GLFWframebuffersizefun callback) {
+Window& Window::setCallback(GLFWframebuffersizefun callback) {
     glfwSetFramebufferSizeCallback(this->m_window, callback);
+    return *this;
 }
 
-void Window::setCallback(GLFWwindowrefreshfun callback) {
+Window& Window::setCallback(GLFWwindowrefreshfun callback) {
     glfwSetWindowRefreshCallback(this->m_window, callback);
+    return *this;
 }
 
 
@@ -152,6 +220,9 @@ void Window::run(uint64_t frames, bool upsMatchFps) {
         m_frameTime = std::chrono::nanoseconds((std::chrono::nanoseconds(1s).count() / frames)).count();
     }
 
+    // Add window to list for main thread to close
+    s_windows.emplace_back(this);
+    
     // Put onto thread
     std::thread t(&Window::showWindow, this, upsMatchFps);
     t.detach();
@@ -199,7 +270,7 @@ void Window::render(bool upsMatchFps) {
     
     // Render objects
     for (Renderable* obj : this->m_renderObjects) {
-        obj->Render();
+        obj->render();
     }
 
     glfwSwapBuffers(this->m_window);
@@ -229,7 +300,7 @@ bool Window::shouldClose() {
         s_forceClose = glfwWindowShouldClose(this->m_window);
         return s_forceClose;
     }
-
+    
     return glfwWindowShouldClose(this->m_window);
 }
 
@@ -250,8 +321,7 @@ void Window::showWindow(bool upsMatchFps) {
     
     // Window is closed
     glfwMakeContextCurrent(nullptr);
-
     std::println("Thread ended on {}", std::this_thread::get_id());
-    this->close();
+    m_closed = true;
 }
 

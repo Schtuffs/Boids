@@ -48,7 +48,7 @@ void WindowManager::remove() {
     closeGLFW();
 }
 
-int WindowManager::hasWindows() {
+bool WindowManager::hasWindows() {
     return s_winNum;
 }
 

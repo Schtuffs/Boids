@@ -1,13 +1,16 @@
 #include <iostream>
+#include <string>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "Colour.h"
 #include "Window.h"
 #include "Callbacks.h"
+#include "Boid.h"
 
-#include <thread>
-using namespace std::chrono_literals;
+void foo(Renderable& f) {
+    f.render();
+}
 
 int main(void) {
     // Create and check main window
@@ -15,11 +18,26 @@ int main(void) {
     if (!window.isCreated()) {
         return 0;
     }
-    window.setSize(800, 800);
-    window.setBackground(Colour(0, 0, 0));
-    window.setCallback(key_callback_main);
-    window.run();
-
+    Boid b[] {
+        Boid(WINDOW_SIZE_X, WINDOW_SIZE_Y),
+        Boid(WINDOW_SIZE_X, WINDOW_SIZE_Y),
+        Boid(WINDOW_SIZE_X, WINDOW_SIZE_Y),
+        Boid(WINDOW_SIZE_X, WINDOW_SIZE_Y),
+        Boid(WINDOW_SIZE_X, WINDOW_SIZE_Y),
+        Boid(WINDOW_SIZE_X, WINDOW_SIZE_Y),
+        Boid(WINDOW_SIZE_X, WINDOW_SIZE_Y),
+        Boid(WINDOW_SIZE_X, WINDOW_SIZE_Y),
+        Boid(WINDOW_SIZE_X, WINDOW_SIZE_Y),
+        Boid(WINDOW_SIZE_X, WINDOW_SIZE_Y),
+    };
+    for (size_t i = 0; i < sizeof(b) / sizeof(Boid); i++) {
+        window.add(b[i]);
+    }
+    window.setSize(WINDOW_SIZE_X, WINDOW_SIZE_Y)
+        .setBackground(Colour(0, 0, 0))
+        .setCallback(key_callback_main)
+        .run();
+    
     Window::await();
     return 0;
 }

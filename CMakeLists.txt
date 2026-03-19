@@ -1,24 +1,27 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(boids LANGUAGES C CXX)
+project(window LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
 
 find_package(glfw3 REQUIRED)
 
-set(SRC ./src)
-set(INCLUDE ./include)
+set(SRC src)
+set(INCLUDE include)
 
 add_executable(${PROJECT_NAME}
-    ${SRC}/glad.c
-    ${SRC}/main.cpp
+    ${SRC}/Boid.cpp
     ${SRC}/Callbacks.cpp
     ${SRC}/Colour.cpp
+    ${SRC}/glad.c
+    ${SRC}/Library.cpp
+    ${SRC}/main.cpp
+    ${SRC}/Renderable.cpp
     ${SRC}/Window.cpp
     ${SRC}/WindowManager.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE})
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw stdc++exp)
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR
         ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"
