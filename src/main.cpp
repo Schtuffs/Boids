@@ -3,13 +3,11 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
 #include "Colour.h"
 #include "Window.h"
 #include "Callbacks.h"
 #include "Boid.h"
-
-#include <cmath>
-#include <print>
 
 int main(void) {
     // Create and check main window
@@ -21,8 +19,7 @@ int main(void) {
     for (size_t i = 0; i < sizeof(b) / sizeof(Boid); i++) {
         window.add(b[i]);
     }
-    window.setSize(WINDOW_SIZE_X, WINDOW_SIZE_Y)
-        .setBackground(Colour(0, 0, 0))
+    window.setBackground(Colour(0, 0, 0))
         .setCallback(key_callback_main)
         .run();
     

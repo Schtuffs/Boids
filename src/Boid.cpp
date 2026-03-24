@@ -6,30 +6,42 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "Defines.h"
 #include "Colour.h"
 #include "Library.h"
+#include "RenderManager.h"
+
+GLuint Boid::s_shader = 0;
 
 // ----- Creation ----- Destruction -----
 
-Boid::Boid(int width, int height) : m_x(rand() % width), m_y(rand() % height) {
-    Renderable::init("../lib/default.vert", "../lib/defaultTex.frag", "../lib/defaultCol.frag");
+Boid::Boid(int width, int height) : Renderable(), m_x(rand() % width), m_y(rand() % height) {
+    RenderManager::init();
+    if (s_shader == 0) {
+        s_shader = RenderManager::createShader("../lib/default.vert", "../lib/default.frag");
+    }
     m_colour = Colour(rand() % 255, rand() % 255, rand() % 255);
     m_velX = (rand() % 100) - 50;
     m_velY = (rand() % 100) - 50;
-    // m_velX = 0;
-    // m_velY = -10;
     normalize(BOID_MAGNITUDE);
+    m_lambda = [&]() {
+        render();
+    };
 }
 
-Boid::Boid(double x, double y, double velX, double velY) : m_x(x), m_y(y), m_velX(velX), m_velY(velY) {
-    Renderable::init("../lib/default.vert", "../lib/defaultTex.frag", "../lib/defaultCol.frag");
+Boid::Boid(double x, double y, double velX, double velY) : Renderable(), m_x(x), m_y(y), m_velX(velX), m_velY(velY) {
+    RenderManager::init();
+    if (s_shader == 0) {
+        s_shader = RenderManager::createShader("../lib/default.vert", "../lib/default.frag");
+    }
     m_colour = Colour(rand() % 255, rand() % 255, rand() % 255);
     normalize(BOID_MAGNITUDE);
+    m_lambda = [&](){
+        render();
+    };
 }
 
 Boid::~Boid() {
-    Renderable::terminate();
+    RenderManager::terminate();
 }
 
 
@@ -45,18 +57,18 @@ void Boid::normalize(double magnitude) {
 void Boid::checkEdges() {
     // Left
     if (m_x + m_velX < (-BOID_WIDTH)) {
-        m_x = WINDOW_SIZE_X + BOID_WIDTH;
+        m_x = Window::DEFAULT_WINDOW_WIDTH + BOID_WIDTH;
     }
     // Right
-    else if (m_x + m_velX > WINDOW_SIZE_X + BOID_WIDTH) {
+    else if (m_x + m_velX > Window::DEFAULT_WINDOW_WIDTH + BOID_WIDTH) {
         m_x = -BOID_WIDTH;
     }
     // Up
     if (m_y + m_velY < (-BOID_HEIGHT)) {
-        m_y = WINDOW_SIZE_Y + BOID_HEIGHT;
+        m_y = Window::DEFAULT_WINDOW_HEIGHT + BOID_HEIGHT;
     }
     // Down
-    else if (m_y  + m_velY > WINDOW_SIZE_Y + BOID_HEIGHT) {
+    else if (m_y  + m_velY > Window::DEFAULT_WINDOW_HEIGHT + BOID_HEIGHT) {
         m_y = -BOID_HEIGHT;
     }
 }
@@ -75,10 +87,10 @@ void Boid::render() {
     update();
     
     // Calculating where the points are in vector-space instead of pixel-space
-    GLfloat fx = Library::map(m_x, 0, WINDOW_SIZE_X, -1, 1);
-    GLfloat fy = Library::map(m_y, 0, WINDOW_SIZE_Y, -1, 1);
-    GLfloat fw = Library::map(BOID_WIDTH  / 2, 0, WINDOW_SIZE_X, 0, 2);
-    GLfloat fh = Library::map(BOID_HEIGHT / 2, 0, WINDOW_SIZE_Y, 0, 2);
+    GLfloat fx = Library::map(m_x, 0, Window::DEFAULT_WINDOW_WIDTH, -1, 1);
+    GLfloat fy = Library::map(m_y, 0, Window::DEFAULT_WINDOW_HEIGHT, -1, 1);
+    GLfloat fw = Library::map(BOID_WIDTH  / 2, 0, Window::DEFAULT_WINDOW_WIDTH, 0, 2);
+    GLfloat fh = Library::map(BOID_HEIGHT / 2, 0, Window::DEFAULT_WINDOW_HEIGHT, 0, 2);
     
     // Calculate boid angles
     double theta = std::atan2(m_velY, m_velX);
@@ -92,29 +104,25 @@ void Boid::render() {
     // Places points into array for rendering
     GLfloat vertices[] = {
         // Coordinates      // Colours
-        x1, y1,   m_colour.r / (GLfloat)255.0, m_colour.g / (GLfloat)255.0, m_colour.b / (GLfloat)255.0, m_colour.a / (GLfloat)255.0,
-        x2, y2,   m_colour.r / (GLfloat)255.0, m_colour.g / (GLfloat)255.0, m_colour.b / (GLfloat)255.0, m_colour.a / (GLfloat)255.0,
-        x3, y3,   m_colour.r / (GLfloat)255.0, m_colour.g / (GLfloat)255.0, m_colour.b / (GLfloat)255.0, m_colour.a / (GLfloat)255.0,
+        x1, y1,   (GLfloat)m_colour.r / Colour::MAX, (GLfloat)m_colour.g / Colour::MAX, (GLfloat)m_colour.b / Colour::MAX, (GLfloat)m_colour.a / Colour::MAX,
+        x2, y2,   (GLfloat)m_colour.r / Colour::MAX, (GLfloat)m_colour.g / Colour::MAX, (GLfloat)m_colour.b / Colour::MAX, (GLfloat)m_colour.a / Colour::MAX,
+        x3, y3,   (GLfloat)m_colour.r / Colour::MAX, (GLfloat)m_colour.g / Colour::MAX, (GLfloat)m_colour.b / Colour::MAX, (GLfloat)m_colour.a / Colour::MAX,
     };
 
     GLuint indices[] = {0, 1, 2};
 
     // Binding
-    bindVAO();
-    bindVBO(vertices, sizeof(vertices));
-    bindEBO(indices, sizeof(indices));
-
+    RenderManager::bindVAO(m_vao);
+    RenderManager::bindVBO(m_vbo, vertices, sizeof(vertices));
+    RenderManager::bindEBO(m_ebo, indices, sizeof(indices));
+    
     // Editing
-    linkAttrib(0, 2, GL_FLOAT, 6 * sizeof(GLfloat), (void*)0);
-    linkAttrib(1, 4, GL_FLOAT, 6 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
-
-    // Unbind
-    unbindAll();
-
+    RenderManager::linkAttrib(0, 2, GL_FLOAT, 6 * sizeof(GLfloat), (void*)0);
+    RenderManager::linkAttrib(1, 4, GL_FLOAT, 6 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+    
     // Rendering
-    Renderable::bindColourShader();
-    bindVAO();
+    RenderManager::bindShader(s_shader);
     glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
-    unbindAll();
+    RenderManager::unbindAll();
 }
 
