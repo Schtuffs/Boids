@@ -17,10 +17,11 @@ int main(void) {
     }
     Boid b[100];
     for (size_t i = 0; i < sizeof(b) / sizeof(Boid); i++) {
-        window.add(b[i]);
+        window.add(&b[i]);
     }
     window.setBackground(Colour(0, 0, 0))
-        .setCallback(key_callback_main)
+        .setCallback(key_callback)
+        .setCallback(window_callback)
         .run();
     
     Window::await();

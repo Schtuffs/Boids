@@ -11,11 +11,13 @@
 #include "RenderManager.h"
 
 GLuint Boid::s_shader = 0;
+uint64_t s_totalBoids = 0;
 
 // ----- Creation ----- Destruction -----
 
 Boid::Boid(int width, int height) : Renderable(), m_x(rand() % width), m_y(rand() % height) {
     RenderManager::init();
+    s_totalBoids++;
     if (s_shader == 0) {
         s_shader = RenderManager::createShader("../lib/default.vert", "../lib/default.frag");
     }
@@ -30,6 +32,7 @@ Boid::Boid(int width, int height) : Renderable(), m_x(rand() % width), m_y(rand(
 
 Boid::Boid(double x, double y, double velX, double velY) : Renderable(), m_x(x), m_y(y), m_velX(velX), m_velY(velY) {
     RenderManager::init();
+    s_totalBoids++;
     if (s_shader == 0) {
         s_shader = RenderManager::createShader("../lib/default.vert", "../lib/default.frag");
     }
@@ -42,6 +45,10 @@ Boid::Boid(double x, double y, double velX, double velY) : Renderable(), m_x(x),
 
 Boid::~Boid() {
     RenderManager::terminate();
+    s_totalBoids--;
+    if (s_totalBoids == 0) {
+        RenderManager::destroyShader(s_shader);
+    }
 }
 
 

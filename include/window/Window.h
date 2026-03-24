@@ -194,7 +194,7 @@ public:
      * @author Kyle Wagler
      * @date 2026-03-19
      */
-    Window& add(Renderable& obj);
+    Window& add(Renderable* obj);
     /**
      * @brief Removes a `Renderable` object from the window.
      * @param index The index of the `Renderable` object to remove from window.
@@ -210,7 +210,7 @@ public:
      * @author Kyle Wagler
      * @date 2026-03-19
      */
-    bool remove(Renderable& obj);
+    bool remove(Renderable* obj);
     
     /**
      * @brief Runs window with current args.
@@ -247,7 +247,7 @@ public:
      * @author Kyle Wagler
      * @date 2026-03-19
      */
-    std::vector<Renderable> renderables();
+    std::vector<Renderable*> renderables();
 
 private:
     // Holds the window data
@@ -258,7 +258,7 @@ private:
     bool m_resized;
 
     // Rendering objects
-    std::vector<Renderable> m_renderObjects;
+    std::vector<Renderable*> m_renderObjects;
 
     // Time since previous render
     uint64_t m_prevTime, m_frameTime;

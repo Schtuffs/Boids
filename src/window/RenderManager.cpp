@@ -33,7 +33,7 @@ void RenderManager::terminate() {
     if (s_inits != 0) {
         return;
     }
-    
+
     glfwTerminate();
 }
 

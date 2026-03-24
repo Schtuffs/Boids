@@ -181,7 +181,7 @@ Window& Window::setTitle(const std::string& title) {
     return *this;
 }
 
-Window& Window::add(Renderable& obj) {
+Window& Window::add(Renderable* obj) {
     this->m_renderObjects.push_back(obj);
     return *this;
 }
@@ -192,7 +192,7 @@ bool Window::remove(uint64_t index) {
     return false;
 }
 
-bool Window::remove(Renderable& obj) {
+bool Window::remove(Renderable* obj) {
     // TODO - add removal logic
     (void)obj;
     return false;
@@ -208,7 +208,7 @@ Window& Window::getSize(int& width, int& height) {
     return *this;
 }
 
-std::vector<Renderable> Window::renderables() {
+std::vector<Renderable*> Window::renderables() {
     return m_renderObjects;
 }
 
@@ -315,8 +315,8 @@ void Window::render(bool upsMatchFps) {
     glClear(GL_COLOR_BUFFER_BIT);
     
     // Render objects
-    for (Renderable& obj : m_renderObjects) {
-        obj.render();
+    for (Renderable* obj : m_renderObjects) {
+        obj->render();
     }
 
     glfwSwapBuffers(this->m_window);
