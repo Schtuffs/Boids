@@ -1,9 +1,3 @@
-#include <iostream>
-#include <string>
-
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
 #include "Colour.h"
 #include "Window.h"
 #include "Callbacks.h"
@@ -15,7 +9,7 @@ int main(void) {
     if (!window.isCreated()) {
         return 0;
     }
-    Boid b[100];
+    Boid b[1000];
     for (size_t i = 0; i < sizeof(b) / sizeof(Boid); i++) {
         window.add(&b[i]);
     }
