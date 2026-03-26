@@ -2,7 +2,7 @@
 
 #include <print>
 
-#include "Window.h"
+#include "window/Window.h"
 
 void key_callback([[maybe_unused]]GLFWwindow* window, [[maybe_unused]]int key, [[maybe_unused]]int scancode, [[maybe_unused]]int action, [[maybe_unused]]int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {

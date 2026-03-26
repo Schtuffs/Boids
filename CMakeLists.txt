@@ -5,7 +5,6 @@ project(boids LANGUAGES C CXX)
 find_package(glfw3 REQUIRED)
 
 set(CMAKE_CXX_STANDARD 23)
-set(WINDOW_INC ${CMAKE_CURRENT_LIST_DIR}/include/window)
 set(WINDOW_SRC ${CMAKE_CURRENT_LIST_DIR}/src/window)
 set(SRC src)
 set(INCLUDE include)
@@ -21,9 +20,10 @@ add_executable(${PROJECT_NAME}
     ${SRC}/Boid.cpp
     ${SRC}/Callbacks.cpp
     ${SRC}/main.cpp
+    ${SRC}/Vec2.cpp
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${WINDOW_INC} ${INCLUDE})
+target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE})
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw stdc++exp)
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR

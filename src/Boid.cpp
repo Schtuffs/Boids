@@ -6,45 +6,37 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "Colour.h"
-#include "Library.h"
-#include "RenderManager.h"
+#include "window/Colour.h"
+#include "window/Library.h"
+#include "window/RenderManager.h"
 
 GLuint Boid::s_shader = 0;
 uint64_t s_totalBoids = 0;
 
 // ----- Creation ----- Destruction -----
 
-Boid::Boid(int width, int height) : Renderable(), m_x(rand() % width), m_y(rand() % height) {
-    RenderManager::init();
+Boid::Boid(int width, int height) : Renderable() {
+    // Prepare shaders
     s_totalBoids++;
     if (s_shader == 0) {
         s_shader = RenderManager::createShader("../lib/default.vert", "../lib/default.frag");
     }
-    m_colour = Colour(rand() % 255, rand() % 255, rand() % 255);
-    m_velX = (rand() % 100) - 50;
-    m_velY = (rand() % 100) - 50;
-    normalize(BOID_MAGNITUDE);
-    m_lambda = [&]() {
-        render();
-    };
-}
 
-Boid::Boid(double x, double y, double velX, double velY) : Renderable(), m_x(x), m_y(y), m_velX(velX), m_velY(velY) {
-    RenderManager::init();
-    s_totalBoids++;
-    if (s_shader == 0) {
-        s_shader = RenderManager::createShader("../lib/default.vert", "../lib/default.frag");
-    }
+    // Main boid speed and location variables
+    m_x = (rand() % width) + 500'000;
+    m_y = (rand() % height) + 500'000;
+    m_velX = ((rand() % 100) - 50);
+    m_velY = ((rand() % 100) - 50);
+    m_accX = ((rand() % 100) - 50);
+    m_accY = ((rand() % 100) - 50);
     m_colour = Colour(rand() % 255, rand() % 255, rand() % 255);
     normalize(BOID_MAGNITUDE);
-    m_lambda = [&](){
+    m_renderLambda = [&]() {
         render();
     };
 }
 
 Boid::~Boid() {
-    RenderManager::terminate();
     s_totalBoids--;
     if (s_totalBoids == 0) {
         RenderManager::destroyShader(s_shader);
@@ -55,47 +47,44 @@ Boid::~Boid() {
 
 // ----- Update -----
 
+void Boid::addAcceleration(double accX, double accY) {
+    m_accX += accX;
+    m_accY += accY;
+
+    m_accX = Library::clamp(m_accX, ACCELERATION_MIX, ACCELERATION_MAX);    
+    m_accY = Library::clamp(m_accY, ACCELERATION_MIX, ACCELERATION_MAX);    
+}
+
+void Boid::addAcceleration(const Vec2& vec) {
+    addAcceleration(vec.x, vec.y);
+}
+
 void Boid::normalize(double magnitude) {
     double vector = std::sqrt((m_velX * m_velX) + (m_velY * m_velY));
     m_velX = (m_velX / vector) * magnitude;
     m_velY = (m_velY / vector) * magnitude;
 }
 
-void Boid::checkEdges() {
-    // Left
-    if (m_x + m_velX < (-BOID_WIDTH)) {
-        m_x = Window::DEFAULT_WINDOW_WIDTH + BOID_WIDTH;
-    }
-    // Right
-    else if (m_x + m_velX > Window::DEFAULT_WINDOW_WIDTH + BOID_WIDTH) {
-        m_x = -BOID_WIDTH;
-    }
-    // Up
-    if (m_y + m_velY < (-BOID_HEIGHT)) {
-        m_y = Window::DEFAULT_WINDOW_HEIGHT + BOID_HEIGHT;
-    }
-    // Down
-    else if (m_y  + m_velY > Window::DEFAULT_WINDOW_HEIGHT + BOID_HEIGHT) {
-        m_y = -BOID_HEIGHT;
-    }
-}
-
 void Boid::update() {
-    // Check edges
-    checkEdges();
-    
     // Add velocity
-    m_x +=m_velX;
-    m_y +=m_velY;
+    m_x += m_velX;
+    m_y += m_velY;
+
+    m_velX += m_accX;
+    m_velY += m_accY;
+
+    normalize(BOID_MAGNITUDE);
 }
 
 void Boid::render() {
     // Update before render
     update();
     
-    // Calculating where the points are in vector-space instead of pixel-space
-    GLfloat fx = Library::map(m_x, 0, Window::DEFAULT_WINDOW_WIDTH, -1, 1);
-    GLfloat fy = Library::map(m_y, 0, Window::DEFAULT_WINDOW_HEIGHT, -1, 1);
+    // Wrap coordinates between viewport size
+    double x = ((int64_t)m_x % (int64_t)((Window::DEFAULT_WINDOW_WIDTH + BOID_WIDTH))) - (BOID_WIDTH / 2);
+    double y = ((int64_t)m_y % (int64_t)((Window::DEFAULT_WINDOW_HEIGHT + BOID_HEIGHT))) - (BOID_HEIGHT / 2);
+    GLfloat fx = Library::map(x, 0, Window::DEFAULT_WINDOW_WIDTH, -1, 1);
+    GLfloat fy = Library::map(y, 0, Window::DEFAULT_WINDOW_HEIGHT, -1, 1);
     GLfloat fw = Library::map(BOID_WIDTH  / 2, 0, Window::DEFAULT_WINDOW_WIDTH, 0, 2);
     GLfloat fh = Library::map(BOID_HEIGHT / 2, 0, Window::DEFAULT_WINDOW_HEIGHT, 0, 2);
     
@@ -131,5 +120,17 @@ void Boid::render() {
     RenderManager::bindShader(s_shader);
     glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
     RenderManager::unbindAll();
+}
+
+
+
+// ----- Read -----
+
+Vec2 Boid::position() const noexcept {
+    return Vec2(m_x, m_y);
+}
+
+Vec2 Boid::velocity() const noexcept {
+    return Vec2(m_velX, m_velY);
 }
 

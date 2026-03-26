@@ -1,4 +1,4 @@
-#include "Library.h"
+#include "window/Library.h"
 
 double Library::map(double value, double currentMin, double currentMax, double newMin, double newMax) {
     value -= currentMin;
@@ -12,6 +12,16 @@ double Library::map(double value, double currentMin, double currentMax, double n
 
     value += newMin;
 
+    return value;
+}
+
+double Library::clamp(double value, double min, double max) {
+    if (value < min) {
+        return min;
+    }
+    if (value > max) {
+        return max;
+    }
     return value;
 }
 
