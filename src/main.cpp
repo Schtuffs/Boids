@@ -9,7 +9,7 @@
 #define SIZE(_array) (sizeof(_array) / sizeof(_array[0]))
 
 void seekVelocity(Boid* boids, uint64_t size) {
-    constexpr int64_t SCALE = 10;
+    constexpr int64_t SCALE = 3;
 
     // Calculate average velocity
     Vec2 avgVel(0, 0);
@@ -25,7 +25,7 @@ void seekVelocity(Boid* boids, uint64_t size) {
 }
 
 void seekCenter(Boid* boids, uint64_t size) {
-    constexpr int64_t SCALE = 3000;
+    constexpr int64_t SCALE = 1250;
     
     // Calculate center
     Vec2 center(0, 0);
@@ -47,20 +47,21 @@ double dist(const Vec2& pos1, const Vec2& pos2) {
 
 void avoidNeighbours(Boid* boids, uint64_t size) {
     constexpr double MIN_DIST = Boid::BOID_WIDTH * 1.5;
-    constexpr int64_t SCALE = 100;
+    constexpr int64_t SCALE = 1;
     
     // Please optimize this :(
     for (uint64_t current = 0; current < size - 1; current++) {
         Vec2 curPos = boids[current].position();
         for (uint64_t other = current + 1; other < size; other++) {
             Vec2 othPos = boids[other].position();
-            if (dist(curPos, othPos) < MIN_DIST) {
+            double distance = dist(curPos, othPos);
+            if (distance < MIN_DIST) {
                 // Push away by calculating slope between
                 Vec2 center(std::abs(othPos.x + curPos.x) / 2, std::abs(othPos.y + curPos.y) / 2);
                 Vec2 curSeparate(curPos.x - center.x, curPos.y - center.y);
                 Vec2 othSeparate(othPos.x - center.x, othPos.y - center.y);
-                curSeparate.divide(SCALE);
-                othSeparate.divide(SCALE);
+                curSeparate.multiply((1.0 / distance) / SCALE);
+                othSeparate.multiply((1.0 / distance) / SCALE);
                 boids[current].addAcceleration(curSeparate);
                 boids[other].addAcceleration(othSeparate);
             }
@@ -69,6 +70,8 @@ void avoidNeighbours(Boid* boids, uint64_t size) {
 }
 
 int main(void) {
+    srand(time(nullptr));
+    
     // Create and check main window
     Window window("Boids");
     if (!window.isCreated()) {

@@ -20,8 +20,8 @@
 class Window {
 public:
     static constexpr uint64_t DEFAULT_FRAMERATE     = 60;
-    static constexpr uint64_t DEFAULT_WINDOW_WIDTH  = 1600;
-    static constexpr uint64_t DEFAULT_WINDOW_HEIGHT = 1600;
+    static constexpr uint64_t DEFAULT_WINDOW_WIDTH  = 800;
+    static constexpr uint64_t DEFAULT_WINDOW_HEIGHT = 800;
 
     // ----- Creation ----- Destruction -----
 
