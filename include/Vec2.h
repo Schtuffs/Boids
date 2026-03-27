@@ -1,8 +1,8 @@
 #pragma once
 
 typedef struct Vec2 {
-    double x = 0, y = 0;
-    Vec2(double x, double y);
+    double x, y;
+    Vec2(double x = 0., double y = 0.);
 
     void add(const Vec2& o);
     void sub(const Vec2& o);
